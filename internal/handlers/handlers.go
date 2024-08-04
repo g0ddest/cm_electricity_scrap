@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -149,8 +150,18 @@ func extractContent(doc *goquery.Document) (string, error) {
 		return "", fmt.Errorf("no article found")
 	}
 
-	content := article.Text()
-	return strings.TrimSpace(content), nil
+	htmlContent, err := article.Html()
+	if err != nil {
+		return "", fmt.Errorf("failed to get HTML content: %v", err)
+	}
+
+	converter := md.NewConverter("", true, nil)
+	markdownContent, err := converter.ConvertString(htmlContent)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert HTML to Markdown: %v", err)
+	}
+
+	return markdownContent, nil
 }
 
 func saveToDynamoDB(cfg config.Config, message Message) error {
